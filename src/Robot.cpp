@@ -6,35 +6,25 @@
 #include <VictorSP.h>
 #include <Joystick.h>
 #include <CameraServer.h>
-#include <Encoder.h>
 #include "WPILib.h"
 #include <thread>
 
-#include "Commands/ExampleCommand.h"
-#include "Commands/MyAutoCommand.h"
-
-class Robot : public frc:: IterativeRobot {
+class Robot : public frc::IterativeRobot {
 
 public:
 	void RobotInit()
 	{
+		Joystick1 = new Joystick(0);
 		CimDroit1 = new VictorSP(0);
 		CimDroit2 = new VictorSP(1);
 		CimGauche1 = new VictorSP(2);
 		CimGauche2 = new VictorSP(3);
 
+
 		CimGauche1->Set(0);
 		CimGauche2->Set(0);
 		CimDroit1->Set(0);
 		CimDroit2->Set(0);
-
-		EncodeurDroit = new Encoder (0,1, false, Encoder::EncodingType::k4X);
-		EncodeurDroit->Reset();
-		EncodeurDroit->SetReverseDirection(false);
-
-		EncodeurGauche = new Encoder (2,3, false, Encoder::EncodingType::k4X);
-		EncodeurGauche->Reset();
-		EncodeurGauche->SetReverseDirection(true);
 
 		CameraServer::GetInstance()->StartAutomaticCapture(0);
 		CameraServer::GetInstance()->SetSize(0);
@@ -42,88 +32,114 @@ public:
 
 	void DisabledInit()
 	{
-
 	}
 
 	void DisabledPeriodic()
 	{
-
 	}
 
 	void AutonomousInit()
 	{
-
 	}
 
 	void AutonomousPeriodic()
 	{
+		toursGauche = EncodeurGauche.Get();
+				toursPrevusGauche = 350;
+				std::cout << toursGauche << std::endl;
 
+
+				if(toursGauche > toursPrevusGauche || toursGauche < -toursPrevusGauche)
+				{
+					RampeMoteur(0.5);
+				}
+				else
+				{
+					CimGauche1->Set(0);
+					CimGauche2->Set(0);
+					CimDroit1->Set(0);
+					CimDroit2->Set(0);
+				}
+				vitesseEncodeurGauche = EncodeurGauche.GetDistancePerPulse ();
+
+				toursDroit = EncodeurDroit.Get();
+						toursPrevusDroit = -350;
+						std::cout << toursDroit << std::endl;
+
+
+						if(toursDroit < toursPrevusDroit || toursDroit > -toursPrevusDroit)
+						{
+							RampeMoteur(0.2);
+						}
+						else
+						{
+							CimGauche1->Set(0);
+							CimGauche2->Set(0);
+							CimDroit1->Set(0);
+							CimDroit2->Set(0);
+						}
+						vitesseEncodeurDroit = EncodeurDroit.GetDistancePerPulse();
 	}
 
 	void TeleopInit()
-	{
-		pulsesParTours = 360;
-		distanceParTour = 48;
-		distance_a_parcourir = 0;
-		integrale = 0;
-		/*iMin = ?;
-		iMax = ?;*/
 
-		kP = 2;
-		kI = 0;
-		kD = 0;
+	{
 	}
 
 	void TeleopPeriodic()
 	{
-		distance_parcourue = ((EncodeurDroit->Get() + EncodeurGauche->Get()) /2) /7.5;
-		erreur = (distance_a_parcourir - distance_parcourue) / distance_a_parcourir;
+		double y = Joystick1->GetY();
+		double z = Joystick1->GetZ();
 
-		proportionelle = kP * erreur;
+		CimGauche1->Set(-y+0.5*z);
+		CimGauche2->Set(-y+0.5*z);
+		CimDroit1->Set(y+0.5*z);
+		CimDroit2->Set(y+0.5*z);
 
-		integrale += erreur;
-		/*if(integrale > iMax)
-		{
-			integrale = iMax;
-		}
-		else if(integrale < iMin)
-		{
-			integrale = iMin;
-		}*/
-		integrale = kI * integrale;
-
-		derivee = kD * (erreur - erreurPrecedente);
-		erreurPrecedente = erreur;
-
-		vitesse = proportionelle + integrale + derivee;
-
-		CimGauche1->Set(-vitesse);
-		CimGauche2->Set(-vitesse);
-		CimDroit1->Set(vitesse);
-		CimDroit2->Set(vitesse);
-
-		std::cout << distance_parcourue << std::endl;
 	}
 	void TestPeriodic()
 	{
-
 	}
 
+	void RampeMoteur(double vitesse)
+	{
+		static double consignePrecedente=0;
+		double vitesseReele//=EncodeurGauche.Get();
+		if(vitesse>vitesseReele)
+		{
+			for (vitesseReele = consignePrecedente ; vitesseReele < vitesse ; vitesseReele += 0.000005)
+					{
+						CimGauche1->Set(vitesseReele);
+						CimGauche2->Set(vitesseReele);
+						CimDroit1->Set(-vitesseReele);
+						CimDroit2->Set(-vitesseReele);
+						consignePrecedente = vitesseReele;
+					}
+		}
+		else
+		{
+			for (vitesseReele = consignePrecedente ; vitesseReele > vitesse ; vitesseReele -= 0.000005)
+					{
+						CimGauche1->Set(vitesseReele);
+						CimGauche2->Set(vitesseReele);
+						CimDroit1->Set(-vitesseReele);
+						CimDroit2->Set(-vitesseReele);
+						consignePrecedente = vitesseReele;
+					}
+		}
+	}
 
 private:
+	Joystick* Joystick1 = 0;
 	VictorSP* CimDroit1 = 0;
 	VictorSP* CimDroit2 = 0;
 	VictorSP* CimGauche1 = 0;
 	VictorSP* CimGauche2 = 0;
+	Encoder* Encodeur = 0;
+	frc::Encoder EncodeurGauche{0,1, false, Encoder::EncodingType::k4X};
+	frc::Encoder EncodeurDroit{2,3, false, Encoder::EncodingType::k4X};
 
-	Encoder* EncodeurDroit;
-	Encoder* EncodeurGauche;
-
-	double pulsesParTours, distanceParTour;
-	double distance_a_parcourir, distance_parcourue, erreur, erreurPrecedente, vitesse;
-	double proportionelle, kP;
-	double integrale, iMin, iMax, kI;
-	double derivee, kD;
+	double toursPrevusGauche, toursGauche, toursDroit, toursPrevusDroit, vitesseEncodeurDroit, vitesseEncodeurGauche, vitesseReele, vitesse ;
 };
 
 START_ROBOT_CLASS(Robot)
