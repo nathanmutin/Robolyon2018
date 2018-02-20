@@ -26,7 +26,7 @@ Pince::Pince()
 	Bag->Set(0);
 
 	AntiRetour = new Servo(10);
-	Switch = new DigitalInput(9);
+//	Switch = new DigitalInput(9);
 }
 
 void Pince::attraperCube(bool boutonPresse)
@@ -73,7 +73,7 @@ void Pince::leverPince()
 
 void Pince::descendrePinceDebutMatch()
 {
-	AntiRetour->SetAngle (0);
+/*	AntiRetour->SetAngle (0);
 
 	while(Switch->Get()==false)
 	{
@@ -81,7 +81,7 @@ void Pince::descendrePinceDebutMatch()
 	}
 
 	AntiRetour->SetAngle (90);
-	Bag->Set (0);
+	Bag->Set (0);*/
 }
 
 void Pince::descendrePinceFinMatch()

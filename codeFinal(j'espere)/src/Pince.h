@@ -10,7 +10,7 @@
 #include <VictorSP.h>
 #include <PWMVictorSPX.h>
 #include "WPILib.h"
-#include <DigitalInput.h>
+//#include <DigitalInput.h>
 #include <Encoder.h>
 #include <Servo.h>
 
